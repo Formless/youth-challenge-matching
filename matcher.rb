@@ -53,7 +53,7 @@ class Matcher
   def match!
     self.unmatched_athletes = athletes
     sex_divisions = ["male", "female"]
-
+    max_heuristic = 0
     # match per division
     sex_divisions.each do |sex_division|
       available_athletes = athletes.select{ |a| a.gender == sex_division }
@@ -62,7 +62,12 @@ class Matcher
         if available_athletes.length > 0
           match_values = available_athletes.map{ |a| selected_athlete.matchup(a) }.compact.sort_by{ |x| x[:heuristic] }
           best_match = match_values.last
-          matches << [selected_athlete, best_match[:athlete]]
+          
+            max_heuristic = best_match[:heuristic] if best_match[:heuristic] > max_heuristic
+          
+          confidence_percentage = (best_match[:heuristic] / max_heuristic) * 100
+          matches << [selected_athlete, best_match[:athlete], confidence_percentage]
+          
           self.unmatched_athletes.delete_if { |x| x.id == selected_athlete.id}
           self.unmatched_athletes.delete_if { |x| x.id == best_match[:athlete].id}
           available_athletes.delete_if { |x| x.id == selected_athlete.id}
@@ -80,7 +85,8 @@ class Matcher
     p '-------MATCHES--------'
     match!
     matches.each do |a|
-      p "[#{a[0].last_name}, #{a[0].first_name}] VS [#{a[1].last_name}, #{a[1].first_name}]"
+      confidence_percentage = (a[2].round(2))
+      p "[#{a[0].last_name}, #{a[0].first_name}] VS [#{a[1].last_name}, #{a[1].first_name}] | Confidence: #{confidence_percentage}%"
     end
     p '------UNMATCHED-------'
     unmatched_athletes.each do |a|
